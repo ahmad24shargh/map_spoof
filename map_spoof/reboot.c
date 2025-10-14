@@ -89,7 +89,7 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 		}
 		
 		pr_info("LKM: entry %s added!\n", buf);
-		list_add(&new_entry->list, &string_list);
+		list_add(&new_entry->list, &maps_string_list);
 		smp_mb();
 
 	}
