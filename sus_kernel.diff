@@ -2,7 +2,7 @@ diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
 index ab4115a6e7ef..4f73241b1a7f 100644
 --- a/fs/proc/task_mmu.c
 +++ b/fs/proc/task_mmu.c
-@@ -87,10 +87,18 @@
+@@ -87,10 +87,19 @@
  unsigned long task_vsize(struct mm_struct *mm)
  {
  	return PAGE_SIZE * mm->total_vm;
@@ -15,13 +15,14 @@ index ab4115a6e7ef..4f73241b1a7f 100644
 +extern struct list_head maps_string_list; // this is on ksu's core_hook.c
 +
 +extern atomic_t skip_rwxp;
++extern atomic_t skip_rxp;
 +
  unsigned long task_statm(struct mm_struct *mm,
  			 unsigned long *shared, unsigned long *text,
  			 unsigned long *data, unsigned long *resident)
  {
  	*shared = get_mm_counter(mm, MM_FILEPAGES) +
-@@ -286,10 +294,29 @@
+@@ -286,10 +294,43 @@
  	unsigned long long pgoff = 0;
  	unsigned long start, end;
  	dev_t dev = 0;
@@ -35,11 +36,25 @@ index ab4115a6e7ef..4f73241b1a7f 100644
 +		if (skip_count > 0) {
 +			skip_count--;
 +			seq_printf(m, "%08lx-%08lx ---- 00000000 00:00 0  \n",vma->vm_start, vma->vm_end);
-+			
 +			return;
 +		}
 +		
 +		if ((vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC)) == (VM_READ | VM_WRITE | VM_EXEC) && !(vma->vm_flags & VM_MAYSHARE)) {
++			seq_printf(m, "%08lx-%08lx ---- 00000000 00:00 0  \n",vma->vm_start, vma->vm_end);
++			skip_count = 2;
++			return;
++		}
++	}
++	// skip r-xp and two entries after it
++	if (atomic_read(&skip_rxp)) {
++		static int skip_count = 0;	
++		if (skip_count > 0) {
++			skip_count--;
++			seq_printf(m, "%08lx-%08lx ---- 00000000 00:00 0  \n",vma->vm_start, vma->vm_end);
++			return;
++		}
++		
++		if ((vma->vm_flags & (VM_READ | VM_EXEC)) == (VM_READ | VM_EXEC) && !(vma->vm_flags & VM_MAYSHARE)) {
 +			seq_printf(m, "%08lx-%08lx ---- 00000000 00:00 0  \n",vma->vm_start, vma->vm_end);
 +			skip_count = 2;
 +			return;

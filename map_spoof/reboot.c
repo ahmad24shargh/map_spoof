@@ -15,6 +15,8 @@
 #define CMD_CLEAR_HIDE_MAP_LIST		0x11002
 #define CMD_SKIP_RWXP_ENABLE		0x11003
 #define CMD_SKIP_RWXP_DISABLE		0x11004
+#define CMD_SKIP_RXP_ENABLE			0x11005
+#define CMD_SKIP_RXP_DISABLE		0x11006
 
 struct string_entry {
     char *string;
@@ -23,7 +25,9 @@ struct string_entry {
 LIST_HEAD(maps_string_list);
 
 atomic_t skip_rwxp = ATOMIC_INIT(0);
+atomic_t skip_rxp = ATOMIC_INIT(0);
 EXPORT_SYMBOL(skip_rwxp); 
+EXPORT_SYMBOL(skip_rxp); 
 
 static void __exit reboot_lkm_exit(void) 
 {
@@ -111,6 +115,17 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 	if (magic2 == CMD_SKIP_RWXP_DISABLE) {
 		atomic_set(&skip_rwxp, 0);
 		pr_info("LKM: skip_rwxp: 0\n");
+	}
+
+	if (magic2 == CMD_SKIP_RXP_ENABLE) {
+		atomic_set(&skip_rxp, 1);
+		pr_info("LKM: skip_r-xp: 1\n");
+
+	}
+
+	if (magic2 == CMD_SKIP_RXP_DISABLE) {
+		atomic_set(&skip_rxp, 0);
+		pr_info("LKM: skip_r-xp: 0\n");
 	}
 
 	return 0;
