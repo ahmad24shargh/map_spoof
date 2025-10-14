@@ -22,7 +22,7 @@ struct string_entry {
     char *string;
     struct list_head list;
 };
-LIST_HEAD(string_list);
+LIST_HEAD(maps_string_list);
 
 atomic_t skip_rwxp = ATOMIC_INIT(0);
 atomic_t skip_rxp = ATOMIC_INIT(0);

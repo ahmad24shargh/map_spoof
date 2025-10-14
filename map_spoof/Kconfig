@@ -1,9 +1,9 @@
 menu "reboot"
 
 config MAP_SPOOF
-	bool "basic map spoof"
+	bool "Basic map spoof support"
 	default y
 	help
-	  zeroes
+	  Enables map spoofing by zeroing certain fields.
 
 endmenu
