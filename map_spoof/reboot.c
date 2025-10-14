@@ -9,18 +9,18 @@
 #include <linux/smp.h>
 #include <linux/printk.h>
 
-#define DEF_MAGIC 0x11111111
-#define PRINT_ARG 1
-#define CUSTOM_CMD1 11001 // add to list
-#define CUSTOM_CMD2 11002 // destroy list
-#define CUSTOM_CMD3 11003 // skip rwxp enable
-#define CUSTOM_CMD4 11004 // skip rwxp disable
+#define DEF_MAGIC					0x11111111
+#define PRINT_ARG					1
+#define CMD_ADD_TO_HIDE_MAP_LIST	0x11001
+#define CMD_CLEAR_HIDE_MAP_LIST		0x11002
+#define CMD_SKIP_RWXP_ENABLE		0x11003
+#define CMD_SKIP_RWXP_DISABLE		0x11004
 
 struct string_entry {
     char *string;
     struct list_head list;
 };
-LIST_HEAD(string_list);
+LIST_HEAD(maps_string_list);
 
 atomic_t skip_rwxp = ATOMIC_INIT(0);
 EXPORT_SYMBOL(skip_rwxp); 
@@ -57,7 +57,7 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 		pr_info("LKM: print %s\n", buf);
 	}
 
-	if (magic2 == CUSTOM_CMD1) {
+	if (magic2 == CMD_ADD_TO_HIDE_MAP_LIST) {
 		memzero_explicit(buf, 256);
 		struct string_entry *new_entry, *entry;
 		if (copy_from_user(buf, (const char __user *)arg, sizeof(buf) - 1))
@@ -75,7 +75,7 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 			return 0;
 		}
 		
-		list_for_each_entry(entry, &string_list, list) {
+		list_for_each_entry(entry, &maps_string_list, list) {
 			if (!strcmp(entry->string, buf)) {
 				pr_info("LKM: %s is already here!\n", buf);
 				kfree(new_entry->string);
@@ -85,15 +85,15 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 		}
 		
 		pr_info("LKM: entry %s added!\n", buf);
-		list_add(&new_entry->list, &string_list);
+		list_add(&new_entry->list, &maps_string_list);
 		smp_mb();
 
 	}
 	
-	if (magic2 == CUSTOM_CMD2) {
+	if (magic2 == CMD_CLEAR_HIDE_MAP_LIST) {
 		struct string_entry *entry, *tmp;
 
-		list_for_each_entry_safe(entry, tmp, &string_list, list) {
+		list_for_each_entry_safe(entry, tmp, &maps_string_list, list) {
         		pr_info("LKM: entry %s removed!\n", entry->string);
         		list_del(&entry->list);
         		kfree(entry->string);
@@ -102,13 +102,13 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
         	smp_mb();
 	}
 
-	if (magic2 == CUSTOM_CMD3) {
+	if (magic2 == CMD_SKIP_RWXP_ENABLE) {
 		atomic_set(&skip_rwxp, 1);
 		pr_info("LKM: skip_rwxp: 1\n");
 
 	}
 
-	if (magic2 == CUSTOM_CMD4) {
+	if (magic2 == CMD_SKIP_RWXP_DISABLE) {
 		atomic_set(&skip_rwxp, 0);
 		pr_info("LKM: skip_rwxp: 0\n");
 	}
