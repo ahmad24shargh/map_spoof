@@ -18,11 +18,11 @@ index ab4115a6e7ef..7e9e6b5214b5 100644
  static void
  show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
  {
-@@ -360,12 +368,58 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
+@@ -360,12 +368,102 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
  	unsigned long start, end;
  	dev_t dev = 0;
  	const char *name = NULL;
-+	
+ 
 +	struct string_entry *entry, *tmp;
 +
 +	// skip rwxp and two entries after it
@@ -31,11 +31,32 @@ index ab4115a6e7ef..7e9e6b5214b5 100644
 +		if (skip_count > 0) {
 +			skip_count--;
 +			seq_printf(m, "%08lx-%08lx ---- 00000000 00:00 0  \n",vma->vm_start, vma->vm_end);
-+			
 +			return;
 +		}
 +		
 +		if ((vma->vm_flags & (VM_READ | VM_WRITE | VM_EXEC)) == (VM_READ | VM_WRITE | VM_EXEC) && !(vma->vm_flags & VM_MAYSHARE) && !vma->vm_file) {
++			/* if VMA has a name (like [vdso], [anon:xxxx]), don't skip */
++			const char *vma_name = NULL;
++#if IS_ENABLED(CONFIG_MMU)
++			vma_name = arch_vma_name(vma);
++#endif
++#ifdef CONFIG_KALLSYMS
++			if (!vma_name)
++				vma_name = vma->vm_ops && vma->vm_ops->name ?
++							vma->vm_ops->name(vma) : NULL;
++#endif
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
++			/* fallback: check anon_vma_name() for [anon:*] mappings */
++			if (!vma_name && vma->vm_mm)
++				if (anon_vma_name(vma))
++					goto skip_done;  // IS [anon:xxxx] → show normally
++#else
++			if (vma_get_anon_name(vma))
++				goto skip_done;  // IS [anon:xxxx] → show normally
++#endif
++			if (vma_name)
++				goto skip_done;  // has a name → show normally
++
 +			seq_printf(m, "%08lx-%08lx ---- 00000000 00:00 0  \n",vma->vm_start, vma->vm_end);
 +			skip_count = 0;
 +			return;
@@ -50,13 +71,36 @@ index ab4115a6e7ef..7e9e6b5214b5 100644
 +			return;
 +		}
 +		
-+		if ((vma->vm_flags & (VM_READ | VM_EXEC)) == (VM_READ | VM_EXEC) && !(vma->vm_flags & VM_MAYSHARE) && !vma->vm_file) {
++		if ((vma->vm_flags & (VM_READ | VM_EXEC)) == (VM_READ | VM_EXEC) && !(vma->vm_flags & VM_WRITE) && !(vma->vm_flags & VM_MAYSHARE) && !vma->vm_file) {
++			/* if VMA has a name (like [vdso], [anon:xxxx]), don't skip */
++			const char *vma_name = NULL;
++#if IS_ENABLED(CONFIG_MMU)
++			vma_name = arch_vma_name(vma);
++#endif
++#ifdef CONFIG_KALLSYMS
++			if (!vma_name)
++				vma_name = vma->vm_ops && vma->vm_ops->name ?
++							vma->vm_ops->name(vma) : NULL;
++#endif
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
++			/* fallback: check anon_vma_name() for [anon:*] mappings */
++			if (!vma_name && vma->vm_mm)
++				if (anon_vma_name(vma))
++					goto skip_done;  // IS [anon:xxxx] → show normally
++#else
++			if (vma_get_anon_name(vma))
++				goto skip_done;  // IS [anon:xxxx] → show normally
++#endif
++			if (vma_name)
++				goto skip_done;  // has a name → show normally
++
 +			seq_printf(m, "%08lx-%08lx ---- 00000000 00:00 0  \n",vma->vm_start, vma->vm_end);
 +			skip_count = 0;
 +			return;
 +		}
 +	}
- 
++
++	skip_done:
  	if (file) {
  		struct inode *inode = file_inode(vma->vm_file);
  		dev = inode->i_sb->s_dev;
