@@ -77,7 +77,7 @@ index ab4115a6e7ef..4f73241b1a7f 100644
 +			return;
 +		}
 +		
-+		if ((vma->vm_flags & (VM_READ | VM_EXEC)) == (VM_READ | VM_EXEC) && !(vma->vm_flags & VM_MAYSHARE) && !vma->vm_file) {
++		if ((vma->vm_flags & (VM_READ | VM_EXEC)) == (VM_READ | VM_EXEC) && !(vma->vm_flags & VM_WRITE) && !(vma->vm_flags & VM_MAYSHARE) && !vma->vm_file) {
 +			/* if VMA has a name (like [vdso], [anon:xxxx]), don't skip */
 +			const char *vma_name = NULL;
 +#if IS_ENABLED(CONFIG_MMU)
