@@ -2,10 +2,11 @@ diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
 index ab4115a6e7ef..7e9e6b5214b5 100644
 --- a/fs/proc/task_mmu.c
 +++ b/fs/proc/task_mmu.c
-@@ -349,6 +349,15 @@ static void show_vma_header_prefix(struct seq_file *m,
+@@ -349,6 +349,16 @@ static void show_vma_header_prefix(struct seq_file *m,
  		   MAJOR(dev), MINOR(dev), ino);
  }
  
++#include <linux/version.h>
 +struct string_entry {
 +    char *string;
 +    struct list_head list;
