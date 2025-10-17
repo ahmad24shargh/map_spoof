@@ -22,7 +22,7 @@ struct string_entry {
     char *string;
     struct list_head list;
 };
-LIST_HEAD(maps_string_list);
+LIST_HEAD(string_list);
 
 atomic_t skip_rwxp = ATOMIC_INIT(0);
 atomic_t skip_rxp = ATOMIC_INIT(0);
@@ -79,7 +79,7 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 			return 0;
 		}
 		
-		list_for_each_entry(entry, &maps_string_list, list) {
+		list_for_each_entry(entry, &string_list, list) {
 			if (!strcmp(entry->string, buf)) {
 				pr_info("LKM: %s is already here!\n", buf);
 				kfree(new_entry->string);
@@ -89,7 +89,7 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 		}
 		
 		pr_info("LKM: entry %s added!\n", buf);
-		list_add(&new_entry->list, &maps_string_list);
+		list_add(&new_entry->list, &string_list);
 		smp_mb();
 
 	}
@@ -97,7 +97,7 @@ int lkm_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user 
 	if (magic2 == CMD_CLEAR_HIDE_MAP_LIST) {
 		struct string_entry *entry, *tmp;
 
-		list_for_each_entry_safe(entry, tmp, &maps_string_list, list) {
+		list_for_each_entry_safe(entry, tmp, &string_list, list) {
         		pr_info("LKM: entry %s removed!\n", entry->string);
         		list_del(&entry->list);
         		kfree(entry->string);

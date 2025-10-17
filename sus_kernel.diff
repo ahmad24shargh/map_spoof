@@ -13,7 +13,7 @@ index ab4115a6e7ef..4f73241b1a7f 100644
 +    char *string;
 +    struct list_head list;
 +};
-+extern struct list_head maps_string_list; // this is on ksu's core_hook.c
++extern struct list_head string_list; // this is on ksu's core_hook.c
 +
 +extern atomic_t skip_rwxp;
 +extern atomic_t skip_rxp;
@@ -121,7 +121,7 @@ index ab4115a6e7ef..4f73241b1a7f 100644
 +
 +		if (file->f_path.dentry) {
 +			smp_mb();
-+			list_for_each_entry_safe(entry, tmp, &maps_string_list, list) {
++			list_for_each_entry_safe(entry, tmp, &string_list, list) {
 +				if (strstr(file->f_path.dentry->d_name.name, entry->string)) {
 +					seq_printf(m, "%08lx-%08lx ---- 00000000 00:00 0  \n",vma->vm_start, vma->vm_end);
 +					return;
